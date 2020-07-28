@@ -1,0 +1,56 @@
+body {
+  font-family: "Lucida Console", Monaco, monospace;
+  font-size: 11px;
+
+  background-color: #111;
+  color: white;
+
+  padding: 0;
+  margin: 0;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.renderer {
+  outline: none;
+}
+
+.foot {
+  position: absolute;
+  bottom: 10px;
+}
+
+.sheet {
+  position: absolute;
+  left: 0;
+  top: 0;
+  background: black;
+  width: 100%;
+  height: 100%;
+  opacity: 70%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-direction: column;
+}
+
+.subtitles {
+  position: absolute;
+  bottom: 30px;
+  font-size: 3vh;
+  margin: 30px;
+  opacity: 50%;
+  text-align: justify;
+}
+
+.button {
+  font-size: 3vh;
+  user-select: none;
+  cursor: pointer;
+}
+
+a {
+  color: hotpink;
+}
