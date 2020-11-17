@@ -1,0 +1,14 @@
+/* gen by new.py at 2020-09-22 08:15:12.085995 */
+body {
+  background-color: #aaa;
+  color: #aaa;
+  font-family: monospace;
+  font-size: 11px;
+  height: 100%;
+  width: 100%;
+  padding: 0;
+  margin: 0;
+  justify-content: center;
+  align-items: center;
+  display: flex;
+}
