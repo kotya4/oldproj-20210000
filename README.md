@@ -4,6 +4,8 @@ Use "new.py" to create new project. Simply creates new directory \w some determi
 
 DESCS:
 
+slippery-start -- wallproject vol. ∞.
+
 angry-wing -- the game.
 
 sweet-loaf -- desent room generator for angry-wing project.
