@@ -334,10 +334,10 @@ function set_block(x, y, v) {
 }
 
 
-function gameloop_onkeypress(e) {
+function gameloop_onkeydown(e) {
   if (keyboard_disabled) return;
 
-  if ('KeyA' === e.code) {
+  if ('KeyA' === e.code || 'ArrowLeft' === e.code) {
     const dump = save_pos_rot(fb1, fb2);
     fb1.pos[0] -= 1;
     fb2.pos[0] -= 1;
@@ -348,7 +348,7 @@ function gameloop_onkeypress(e) {
     }
   }
 
-  if ('KeyD' === e.code) {
+  if ('KeyD' === e.code || 'ArrowRight' === e.code) {
     const dump = save_pos_rot(fb1, fb2);
     fb1.pos[0] += 1;
     fb2.pos[0] += 1;
@@ -360,7 +360,7 @@ function gameloop_onkeypress(e) {
     }
   }
 
-  if ('KeyQ' === e.code) {
+  if ('KeyQ' === e.code || 'ArrowUp' === e.code) {
     const dump = save_pos_rot(fb1, fb2);
     change_rot(+1);
     if (collide_grid_any(fb2)) {
@@ -381,7 +381,7 @@ function gameloop_onkeypress(e) {
     }
   }
 
-  if ('KeyS' === e.code) {
+  if ('KeyS' === e.code || 'ArrowDown' === e.code) {
     if (rot === 0 || rot === 2) {
       fb1.pos[1] = find_y_with_block_below(fb1.pos);
       fb2.pos[1] = find_y_with_block_below(fb2.pos);
@@ -495,13 +495,13 @@ function animate_strip(pos, top_pos=null) {
 async function gameloop(resolve_cb) {
   if (is_regen) {
     is_regen = false;
-    removeEventListener('keypress', gameloop_onkeypress);
+    removeEventListener('keydown', gameloop_onkeydown);
     resolve_cb(3);
     return;
   }
   if (is_close) {
     is_close = false;
-    removeEventListener('keypress', gameloop_onkeypress);
+    removeEventListener('keydown', gameloop_onkeydown);
     resolve_cb(2);
     return;
   }
@@ -537,7 +537,7 @@ async function gameloop(resolve_cb) {
 
       // game over
       if (_1_pos[1] < 0 && _2_pos[1] < 0) {
-        removeEventListener('keypress', gameloop_onkeypress);
+        removeEventListener('keydown', gameloop_onkeydown);
         resolve_cb(1);
         return;
       }
@@ -598,7 +598,7 @@ async function gameloop(resolve_cb) {
 
       // level completed
       if (quads_cur_num <= 0) {
-        removeEventListener('keypress', gameloop_onkeypress);
+        removeEventListener('keydown', gameloop_onkeydown);
         resolve_cb(0);
         return;
       }
@@ -877,7 +877,7 @@ function define_button_go() {
   };
 
   button_go.onrelease = () => {
-    window.removeEventListener('keypress', button_go.onpress);
+    window.removeEventListener('keydown', button_go.onpress);
     window.removeEventListener('keyup', button_go.onrelease);
     button_go.disable();
 
@@ -905,7 +905,7 @@ function define_button_go() {
 
     is_gamelooping = true;
     // activate game (removeEventListener will be called in gameloop)
-    window.addEventListener('keypress', gameloop_onkeypress);
+    window.addEventListener('keydown', gameloop_onkeydown);
     (new Promise(r => gameloop(r))).then(status => {
       is_gamelooping = false;
       if (beeth_volume_iid != null) clearInterval(beeth_volume_iid);
@@ -949,7 +949,7 @@ function define_button_go() {
   button_go.draw = () => {
     button_go.enable();
     button_go.onleave();
-    window.addEventListener('keypress', button_go.onpress);
+    window.addEventListener('keydown', button_go.onpress);
     window.addEventListener('keyup', button_go.onrelease);
   };
 }

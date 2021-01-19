@@ -27,7 +27,7 @@ async function bridson_demo_1(o) {
     draw_grid: true,
     animate_b_gen_rc__point_radius: 1.5,
     animate_b_gen_rc__overall_time: 200,
-    animate_b_gen_rc__frame_delay: 50,
+    animate_b_gen_rc__frame_delay: 10,
     animate_b_gen_rc__with_points: false,
     animate_b_gen_rc__with_await: true,
     animate_b_gen_rc__colorized_stroke: true,

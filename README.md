@@ -1,25 +1,37 @@
-Здесь находятся все проекты, написанные на JS.
+JS.
 
-Описания проектов:
+Use "new.py" to create new project. Simply creates new directory \w some determined source files. Also can apply random name to the project and include sources from "./_party" directory.
 
-asciithree -- трехмерный треугольник. не помню, для чего. вроде как хотел сделать полигональный софтверный движок, но почему название такое странное? похоже, это попытка переосмыслить старый проект walls.
+DESCS:
 
-bridson -- синий шум. закончен.
+angry-wing -- the game.
 
-bubbles -- ремейк игры. осталось доделать выбор уровня, графику.
+sweet-loaf -- desent room generator for angry-wing project.
 
-bus -- многострадальный проект bus, версия 4.
+curly-roll -- messy floor pattern generator for angry-wing project.
 
-creature -- по-видимому, это более новая версия liminal. отличается от liminal тем, что использует grid.js из bus и вроде как строит граф комнат, но никак не использует его. опять странное название.
+agreeable-prose -- messy wallpaper pattern generator for angry-wing project.
 
-gomeoedge -- генерация и поиск изоморфных граней. если добавить раскраску, можно будет использовать для теории групп. закончен.
+friendly-sky -- want to refactor neuralkotyaproject.
 
-liminal -- попытка переосмыслить старый проект roomgenerator для алины с которой я уже больше не дружу. по сути deprecated, смотри creature.
+liminal-space -- liminal spaces generator.
 
-rumba -- мне что потанцевать нельзя? закончен.
+bubbles -- the game.
 
-simplerpg -- хотел сделать игру на стриме. ортогональный тайлизатор, движок как в rpgmaker'е.
+deepweb -- БЕЗНОГNМ.
 
-terrain -- хотел сделать игру не на стриме. чанковый генератор ландшафта.
+test -- trying replace 2'5D graphics in wallproject \w real 3d. govno happens.
 
-webgl -- попытка отрефакторить старый движок для 3д графики. мэх..
+gomeoedge -- generates certain structures and searches for gomeomophisms.
+
+simplerpg -- idk some voxelisation experiments and so on.
+
+terrain -- chunked terrain generator.
+
+webgl -- an old webgl project i want to refactor but ...
+
+bus -- busproject vol. 4.
+
+bridson -- blue noise.
+
+rumba -- another threejs skeleton animation demo.

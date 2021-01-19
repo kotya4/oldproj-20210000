@@ -1,4 +1,8 @@
-/* gen by new.py at 2020-11-16 12:13:40.629132 */
+/* gen by new.py at 2020-11-16 12:13:40.629132
+
+Линейная НС.
+
+*/
 window.onload = async function onload() {
   if ('seedrandom' in Math) Math.seedrandom('0');
   const height = 400;

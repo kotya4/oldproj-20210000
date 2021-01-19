@@ -1,0 +1,22 @@
+/* gen by new.py at 2020-11-28 01:16:07.297405 */
+body {
+  background-color: #111;
+  color: #aaa;
+  font-family: monospace;
+  font-size: 11px;
+  height: 100%;
+  width: 100%;
+  padding: 0;
+  margin: 0;
+  justify-content: center;
+  align-items: center;
+  display: flex;
+  overflow: hidden;
+}
+
+canvas {
+  image-rendering: pixelated;
+  width: auto;
+  height: 800px;
+}
+
