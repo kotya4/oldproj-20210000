@@ -174,15 +174,54 @@ class DisplayBuffer {
       char      = 0,
     } = o || {};
 
+    // used in stroke to choose between symbols
+    this.weights = Array(10).fill().map(Math.random);
+
     this.textcolor_buffer = Array(width).fill().map(() => Array(height).fill(textcolor));
     this.bgcolor_buffer = Array(width).fill().map(() => Array(height).fill(bgcolor));
     this.char_buffer = Array(width).fill().map(() => Array(height).fill(char));
     this.height = height;
     this.width = width;
+
+    // used to create depth slices
+    this.stencil_buffer = Array(height * width).fill(0);
+    this.stencil_value = 0;
   }
 
   is_in_range(x, y) {
     return !(x < 0 || x >= this.width || y < 0 || y >= this.height);
+  }
+
+  test_stencil(x, y) {
+    x = ~~x;
+    y = ~~y;
+    if (false === this.is_in_range(x, y)) return false;
+    return this.stencil_buffer[y * this.width + x] === this.stencil_value;
+  }
+
+  flush_stencil(v=0) {
+    this.stencil_value = v;
+    for (let i = 0; i < this.stencil_buffer.length; ++i)
+      this.stencil_buffer[i] = v;
+  }
+
+  rect_stencil_ptc(x, y, w, h, v) {
+    x /= 8;
+    y /= 12;
+    w /= 8;
+    h /= 12;
+    const dx = w >= 0 ? +1 : -1;
+    const dy = h >= 0 ? +1 : -1;
+    x = Math.round(x);
+    y = Math.round(y);
+    w = Math.round(w);
+    h = Math.round(h);
+    for (let x_ = 0; x_ < Math.abs(w); ++x_)
+      for (let y_ = 0; y_ < Math.abs(h); ++y_)
+    {
+      if (x + x_ < 0 || x + x_ >= this.width || y + y_ < 0 || y + y_ >= this.height) continue;
+      this.stencil_buffer[(y + y_) * this.width + (x + x_)] = v;
+    }
   }
 
   get_char(x, y) {
@@ -195,49 +234,53 @@ class DisplayBuffer {
     return this.textcolor_buffer[x][y];
   }
 
-  get_bgcolor(x, y) {
-    if (!this.is_in_range(x, y)) return null;
-    return this.bgcolor_buffer[x][y];
-  }
+  // get_bgcolor(x, y) {
+  //   if (!this.is_in_range(x, y)) return null;
+  //   return this.bgcolor_buffer[x][y];
+  // }
 
-  set_char(x, y, v) {
-    if (!this.is_in_range(x, y)) return null;
-    return (this.char_buffer[x][y] = v);
-  }
+  // set_char(x, y, v) {
+  //   if (!this.is_in_range(x, y)) return null;
+  //   return (this.char_buffer[x][y] = v);
+  // }
 
-  set_textcolor(x, y, v) {
-    if (!this.is_in_range(x, y)) return null;
-    return (this.textcolor_buffer[x][y] = v);
-  }
+  // set_textcolor(x, y, v) {
+  //   if (!this.is_in_range(x, y)) return null;
+  //   return (this.textcolor_buffer[x][y] = v);
+  // }
 
-  set_bgcolor(x, y, v) {
-    if (!this.is_in_range(x, y)) return null;
-    return (this.bgcolor_buffer[x][y] = v);
-  }
+  // set_bgcolor(x, y, v) {
+  //   if (!this.is_in_range(x, y)) return null;
+  //   return (this.bgcolor_buffer[x][y] = v);
+  // }
 
-  // source: https://en.wikipedia.org/wiki/Digital_differential_analyzer_(graphics_algorithm)
-  stroke(x1, y1, x2, y2, color=null, is_overlapping=true) {
-    const choose_char_code = (s) => s.charCodeAt(Math.random() * s.length | 0);
 
-    x1 = (x1 | 0) + 0.5;
-    y1 = (y1 | 0) + 0.5;
-    x2 = (x2 | 0) + 0.5;
-    y2 = (y2 | 0) + 0.5;
+  stroke_ptc(x1, y1, x2, y2) {
+    let color=null, is_overlapping=true; // HACK: args
 
-    let dx = x2 - x1;
-    let dy = y2 - y1;
-    const step = Math.abs(dx) > Math.abs(dy) ? Math.abs(dx) : Math.abs(dy);
-    dx /= step;
-    dy /= step;
+    x1 /= 8;
+    y1 /= 12;
+    x2 /= 8;
+    y2 /= 12;
+
+    let dx = x2 - ~~x1;
+    let dy = y2 - ~~y1;
+    const steps_num = Math.abs(dx) > Math.abs(dy) ? Math.abs(dx) : Math.abs(dy);
+    dx /= steps_num;
+    dy /= steps_num;
     const abdx = Math.abs(dx);
     const abdy = Math.abs(dy);
+    // HACK: to reduce breaks on vetical lines (but creates a bit of distortion on diagonales, so idk..)
+    if (abdx < 0.04) dx = 0;
 
     const SLASH = '\\/'[dy * dx < 0 | 0];
 
     const is_gradient = color instanceof Array;
-    const gradient_len = is_gradient ? step / color.length : 1;
+    const gradient_len = is_gradient ? steps_num / color.length : 1;
 
-    for (let i = 0; i < step; ++i) {
+    for (let i = 0; i < steps_num; ++i) {
+      const __charat = (s) => s.charCodeAt(this.weights[i % this.weights.length] * s.length | 0);
+
       const x = ~~x1;
       const y = ~~y1;
       const px = x1 - x;
@@ -246,6 +289,7 @@ class DisplayBuffer {
       y1 += dy;
 
       if (!this.is_in_range(x, y)) continue;
+      if (!this.test_stencil(x, y)) continue;
 
       if (is_gradient) {
         this.textcolor_buffer[x][y] = color[i/gradient_len|0];
@@ -253,34 +297,101 @@ class DisplayBuffer {
         this.textcolor_buffer[x][y] = color;
       }
 
-      if (!is_overlapping && this.char_buffer[x][y] !== 0)
-        this.char_buffer[x][y] = choose_char_code('.');
-
-      else if (abdx !== 1)
-        this.char_buffer[x][y] = choose_char_code(px < abdx ? (Math.random() < (abdx - 0.5) ? SLASH : ';:') : '|');
-
-      else if (abdy <= 0.35)
-        this.char_buffer[x][y] = ['`', `'"`, '-', '.,', '_'].map(choose_char_code)[py * 5 | 0];
-
-      else if (abdy <= 0.66)
-        this.char_buffer[x][y] = [`\`'"`, SLASH, '.,'].map(choose_char_code)[py * 3 | 0];
-
-      else {
-        if      (py < 0.10) this.char_buffer[x][y] = choose_char_code('`');
-        else if (py < 0.33) this.char_buffer[x][y] = choose_char_code(`'"`);
-        else if (py < 0.80) this.char_buffer[x][y] = choose_char_code(SLASH);
-        else                this.char_buffer[x][y] = choose_char_code('.,');
+      if (!is_overlapping && this.char_buffer[x][y] !== 0) {
+        this.char_buffer[x][y] = __charat('.');
+        continue;
       }
+
+      if (abdx !== 1) {
+        // HACK: to reduce number of sticknig out vertical symbols on top and bottom
+        if (i === 0 && dy > 0 && py >= 0.5) {
+          this.char_buffer[x][y] = __charat('.,');
+          continue;
+        }
+        if (i > steps_num - 2 && dy > 0 && py >= 0.85) {
+          this.char_buffer[x][y] = __charat(`'`);
+          continue;
+        }
+
+        if (px < abdx) {
+          this.char_buffer[x][y] = __charat(this.weights[i % this.weights.length] < (abdx - 0.5) ? SLASH : ';:');
+        } else {
+          this.char_buffer[x][y] = __charat('|');
+        }
+        continue;
+      }
+
+      if (abdy <= 0.35) {
+        this.char_buffer[x][y] = ['`', `'"`, '-', '.,', '_'].map(__charat)[py * 5 | 0];
+        continue;
+      }
+
+      if (abdy <= 0.66) {
+        this.char_buffer[x][y] = [`\`'"`, SLASH, '.,'].map(__charat)[py * 3 | 0];
+        continue;
+      }
+
+      if      (py < 0.10) this.char_buffer[x][y] = __charat('`');
+      else if (py < 0.33) this.char_buffer[x][y] = __charat(`'"`);
+      else if (py < 0.80) this.char_buffer[x][y] = __charat(SLASH);
+      else                this.char_buffer[x][y] = __charat('.,');
     }
   }
 
-  rect(x1, y1, x2, y2, char_i=0) {
-    if (x1 > x2) [x1, x2] = [x2, x1];
-    if (y1 > y2) [y1, y2] = [y2, y1];
-    for (let y = y1; y < y2; ++y)
-      for (let x = x1; x < x2; ++x)
+  rect_ptc(x, y, w, h, char_i=0) {
+    x /= 8;
+    y /= 12;
+    w /= 8;
+    h /= 12;
+    const dx = w >= 0 ? +1 : -1;
+    const dy = h >= 0 ? +1 : -1;
+    x = Math.round(x);
+    y = Math.round(y);
+    w = Math.round(w);
+    h = Math.round(h);
+    for (let x_ = 0; x_ < Math.abs(w); ++x_)
+      for (let y_ = 0; y_ < Math.abs(h); ++y_)
     {
-      this.char_buffer[x][y] = char_i;
+      if (x + x_ < 0 || x + x_ >= this.width || y + y_ < 0 || y + y_ >= this.height) continue;
+      this.char_buffer[x + x_][y + y_] = char_i;
+    }
+  }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  // rect(x1, y1, x2, y2, char_i=0) {
+  //   if (x1 > x2) [x1, x2] = [x2, x1];
+  //   if (y1 > y2) [y1, y2] = [y2, y1];
+  //   for (let y = y1; y < y2; ++y)
+  //     for (let x = x1; x < x2; ++x)
+  //   {
+  //     this.char_buffer[x][y] = char_i;
+  //   }
+  // }
+
+  clear() {
+    for (let x = 0; x < this.width; ++x)
+      for (let y = 0; y < this.height; ++y)
+    {
+      this.char_buffer[x][y] = 0;
+      // this.textcolor_buffer[x][y];
+      // this.bgcolor_buffer[x][y];
     }
   }
 }
