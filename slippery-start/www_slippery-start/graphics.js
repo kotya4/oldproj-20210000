@@ -94,9 +94,9 @@ class RasterFont {
     );
   }
 
-  ptc(x, y) {
-    return [x / this.char_width | 0, y / this.char_height | 0];
-  }
+  // ptc(x, y) {
+  //   return [x / this.char_width | 0, y / this.char_height | 0];
+  // }
 }
 
 
@@ -184,19 +184,41 @@ class DisplayBuffer {
     this.width = width;
 
     // used to create depth slices
-    this.stencil_buffer = Array(height * width).fill(0);
+    this.stencil_buffer = Array(width).fill(0);
     this.stencil_value = 0;
+
+    this.rf = new RasterFont();
+
+    const opacity=0.1;
+    this.colors = [
+      `rgba(146.01773348372205,225.38094909231262,250.2419597323884,${opacity})`,
+      `rgba(82.2617825081445,157.1359728253633,245.0576851886741,${opacity})`,
+      `rgba(142.09978244450764,5.586658644452086,115.73455717596903,${opacity})`,
+      `rgba(115.07858925421192,190.34087394917748,213.6766997492074,${opacity})`,
+      `rgba(106.48704351523975,172.6733471068868,40.798703922355344,${opacity})`,
+      `rgba(18.99635584618352,5.306587158250409,65.85462455995389,${opacity})`,
+      `rgba(155.4515060631868,15.236156613133574,42.914512473024786,${opacity})`,
+      `rgba(245.99781845017918,73.79262727956018,12.673849177211991,${opacity})`,
+      `rgba(211.31188114993898,252.50210504344784,198.00567362375028,${opacity})`,
+      `rgba(214.45324480062214,197.42443336260413,196.45589726237154,${opacity})`,
+    ];
+  }
+
+  get_display_sizes() {
+    return [
+      this.width * 8,
+      this.height * 12,
+    ];
   }
 
   is_in_range(x, y) {
     return !(x < 0 || x >= this.width || y < 0 || y >= this.height);
   }
 
-  test_stencil(x, y) {
+  test_stencil(x, y, ignore_bits=0) {
     x = ~~x;
-    y = ~~y;
-    if (false === this.is_in_range(x, y)) return false;
-    return this.stencil_buffer[y * this.width + x] === this.stencil_value;
+    if (x < 0 || x >= this.width) return false;
+    return (this.stencil_buffer[x] | ignore_bits) === (this.stencil_value | ignore_bits);
   }
 
   flush_stencil(v=0) {
@@ -206,21 +228,20 @@ class DisplayBuffer {
   }
 
   rect_stencil_ptc(x, y, w, h, v) {
+    // TODO: y is depricated, use fill_stencil_ptc
+    fill_stencil_ptc(x, w, v);
+  }
+
+  fill_stencil_ptc(x, w, v) {
     x /= 8;
-    y /= 12;
     w /= 8;
-    h /= 12;
     const dx = w >= 0 ? +1 : -1;
-    const dy = h >= 0 ? +1 : -1;
     x = Math.round(x);
-    y = Math.round(y);
     w = Math.round(w);
-    h = Math.round(h);
-    for (let x_ = 0; x_ < Math.abs(w); ++x_)
-      for (let y_ = 0; y_ < Math.abs(h); ++y_)
-    {
-      if (x + x_ < 0 || x + x_ >= this.width || y + y_ < 0 || y + y_ >= this.height) continue;
-      this.stencil_buffer[(y + y_) * this.width + (x + x_)] = v;
+    for (let x_ = 0; x_ < Math.abs(w); ++x_) {
+      const _x_ = x + x_;
+      if (_x_ < 0 || _x_ >= this.width) continue;
+      this.stencil_buffer[_x_] = v;
     }
   }
 
@@ -255,23 +276,30 @@ class DisplayBuffer {
   // }
 
 
-  stroke_ptc(x1, y1, x2, y2) {
-    let color=null, is_overlapping=true; // HACK: args
+  stroke_ptc(x1, y1, x2, y2, o={}) {
+    const {
+      force_dx            = null,
+      overlap             = true,
+      stencil_ignore_mask = 0,
+    } = o;
+
+
+    let color=null; // HACK: args
 
     x1 /= 8;
     y1 /= 12;
     x2 /= 8;
     y2 /= 12;
 
-    let dx = x2 - ~~x1;
-    let dy = y2 - ~~y1;
+    let dx = x2 - x1;
+    let dy = y2 - y1;
     const steps_num = Math.abs(dx) > Math.abs(dy) ? Math.abs(dx) : Math.abs(dy);
     dx /= steps_num;
     dy /= steps_num;
     const abdx = Math.abs(dx);
     const abdy = Math.abs(dy);
     // HACK: to reduce breaks on vetical lines (but creates a bit of distortion on diagonales, so idk..)
-    if (abdx < 0.04) dx = 0;
+    if (null != force_dx) dx = force_dx;
 
     const SLASH = '\\/'[dy * dx < 0 | 0];
 
@@ -289,7 +317,7 @@ class DisplayBuffer {
       y1 += dy;
 
       if (!this.is_in_range(x, y)) continue;
-      if (!this.test_stencil(x, y)) continue;
+      if (!this.test_stencil(x, y, stencil_ignore_mask)) continue;
 
       if (is_gradient) {
         this.textcolor_buffer[x][y] = color[i/gradient_len|0];
@@ -297,8 +325,7 @@ class DisplayBuffer {
         this.textcolor_buffer[x][y] = color;
       }
 
-      if (!is_overlapping && this.char_buffer[x][y] !== 0) {
-        this.char_buffer[x][y] = __charat('.');
+      if (overlap === false && this.char_buffer[x][y] !== 0) {
         continue;
       }
 
@@ -357,34 +384,6 @@ class DisplayBuffer {
     }
   }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-  // rect(x1, y1, x2, y2, char_i=0) {
-  //   if (x1 > x2) [x1, x2] = [x2, x1];
-  //   if (y1 > y2) [y1, y2] = [y2, y1];
-  //   for (let y = y1; y < y2; ++y)
-  //     for (let x = x1; x < x2; ++x)
-  //   {
-  //     this.char_buffer[x][y] = char_i;
-  //   }
-  // }
-
   clear() {
     for (let x = 0; x < this.width; ++x)
       for (let y = 0; y < this.height; ++y)
@@ -392,6 +391,22 @@ class DisplayBuffer {
       this.char_buffer[x][y] = 0;
       // this.textcolor_buffer[x][y];
       // this.bgcolor_buffer[x][y];
+    }
+  }
+
+  flush(ctx) {
+    // ascii
+    for (let y = 0; y < this.height; ++y)
+      for (let x = 0; x < this.width; ++x)
+    {
+      this.rf.draw(ctx, x, y, this.get_char(x, y), this.get_textcolor(x, y));
+    }
+
+    // draw stencil
+    for (let x = 0; x < this.width; ++x) {
+      const v = this.stencil_buffer[x];
+      ctx.fillStyle = this.colors[v % this.colors.length];
+      ctx.fillRect(x*8, 0, 8, this.height * 12);
     }
   }
 }

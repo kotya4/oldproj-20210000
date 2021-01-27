@@ -1,12 +1,19 @@
 
 var Debug = {
-  do_times_counters: {},
+  counters: {},
 };
 
-Debug.do_times = function (id, counter) {
-  if (id in this.do_times_counters) {
-    return --this.do_times_counters[id] > 0;
+Debug.counter = function (id) {
+  if (false === id in this.counters) {
+    this.counters[id] = 0;
   }
-  this.do_times_counters[id] = counter;
-  return true;
+  return ++this.counters[id];
+};
+
+Debug.counter.usage = function () {
+  for (let i = 0; i < 1000; ++i) {
+    if (Debug.counter('some counter') <= 69) {
+      console.log(`message number ${i+1}: this message will be shown only 69 times`);
+    }
+  }
 };
