@@ -241,6 +241,7 @@ class DisplayBuffer {
     for (let x_ = 0; x_ < Math.abs(w); ++x_) {
       const _x_ = x + x_;
       if (_x_ < 0 || _x_ >= this.width) continue;
+      if ((this.stencil_buffer[_x_] >> 8) < (v >> 8) && (this.stencil_buffer[_x_] >> 8) != 0) continue;
       this.stencil_buffer[_x_] = v;
     }
   }
