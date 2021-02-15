@@ -1,8 +1,10 @@
 JS.
 
-Use "new.py" to create new project. Simply creates new directory \w some determined source files. Also can apply random name to the project and include sources from "./_party" directory.
+Use "new.py" to create new project. Simply creates new directory w\ some determined source files. Also can apply random name to the project and include sources from "./_party" directory.
 
 DESCS:
+
+software-3d -- software 3d rasterizer w\ implemented near clipping. uses gl-matrix.
 
 slippery-start -- wallproject vol. ∞.
 
@@ -21,8 +23,6 @@ liminal-space -- liminal spaces generator.
 bubbles -- the game.
 
 deepweb -- БЕЗНОГNМ.
-
-test -- trying replace 2'5D graphics in wallproject \w real 3d. govno happens.
 
 gomeoedge -- generates certain structures and searches for gomeomophisms.
 
