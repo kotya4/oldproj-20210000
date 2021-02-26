@@ -577,7 +577,7 @@ class Level {
   }
 
 
-  detect_collision(box, dx, dy, dz, dp=[0,0,0]) {
+  detect_collision(player_box, dx, dy, dz, offsets=[0,0,0]) {
     // delta position is array with offsets there must be added
     // to already changed position to remove boundaries overlap.
 
@@ -590,8 +590,47 @@ class Level {
     this.scene.remove(...this.helpers);
     this.helpers.length = 0;
 
-    for (let b of this.collision_boxes) {
+    let collided = false;
 
+    for (let mesh_box of this.collision_boxes) {
+
+      if (!player_box.intersectsBox(mesh_box)) continue;
+
+      collided = true;
+
+
+      // DEBUG:
+      const helper = new THREE.Box3Helper(mesh_box, 0xffff00);
+      this.scene.add(helper);
+      this.helpers.push(helper);
+
+
+      if      (dx > 0 && mesh_box.min.x < player_box.max.x && player_box.max.x < mesh_box.max.x) {
+        offsets[0] = mesh_box.min.x - player_box.max.x;
+      }
+
+      else if (dx < 0 && mesh_box.min.x < player_box.min.x && player_box.min.x < mesh_box.max.x) {
+        offsets[0] = mesh_box.max.x - player_box.min.x;
+      }
+
+      if (dy > 0 && mesh_box.min.y < player_box.max.y && player_box.max.y < mesh_box.max.y) {
+        offsets[1] += mesh_box.min.y - player_box.max.y;
+      }
+
+      if (dy < 0 && mesh_box.min.y < player_box.min.y && player_box.min.y < mesh_box.max.y) {
+        offsets[1] += mesh_box.max.y - player_box.min.y;
+      }
+
+      if (dz > 0 && mesh_box.min.z < player_box.max.z && player_box.max.z < mesh_box.max.z) {
+        offsets[2] += mesh_box.min.z - player_box.max.z;
+      }
+
+      if (dz < 0 && mesh_box.min.z < player_box.min.z && player_box.min.z < mesh_box.max.z) {
+        offsets[2] += mesh_box.max.z - player_box.min.z;
+      }
+
+
+      /*
       if (box.intersectsBox(b)) {
 
         // DEBUG:
@@ -609,10 +648,10 @@ class Level {
         else if (dz < 0) dp[2] = b.max.z - box.min.z;
 
       }
-
+      */
     }
 
-    return dp;
+    return collided;
   }
 
 
