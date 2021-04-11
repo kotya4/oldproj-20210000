@@ -4,6 +4,10 @@ Use "new.py" to create new project. Simply creates new directory w\ some determi
 
 DESCS:
 
+embarrassed-muscle -- circle
+
+fez-clone -- the game. see fezproject
+
 software-3d -- software 3d rasterizer w\ implemented near clipping. uses gl-matrix.
 
 slippery-start -- wallproject vol. ∞.
