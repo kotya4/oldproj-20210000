@@ -41,3 +41,10 @@ bus -- busproject vol. 4.
 bridson -- blue noise.
 
 rumba -- another threejs skeleton animation demo.
+
+
+Also see:
+
+https://github.com/sluchaynayakotya/oldproj-20200610
+
+https://github.com/sluchaynayakotya/oldproj-20190707
