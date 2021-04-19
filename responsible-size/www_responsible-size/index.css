@@ -1,0 +1,43 @@
+/* gen by new.py at 2021-04-13 07:08:40.893168 */
+body {
+  height: 100vh;
+  width: 100vw;
+  padding: 0;
+  margin: 0;
+  overflow: hidden;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.client {
+  position: relative;
+  left: 0;
+  top: 0;
+  overflow: hidden;
+  user-select: none;
+  background: lightblue;
+  background-image: url("./board.jpg");
+  background-size: 100%;
+}
+
+.element {
+  user-select: none;
+  position: absolute;
+}
+
+.element > * {
+  width: 100%;
+  height: 100%;
+  pointer-events: none; /* to reduce interference between "element" pointer-everts */
+}
+
+.element:hover {
+  background-color: rebeccaPurple;
+}
+
+.text {
+  position: absolute;
+  pointer-events: none;
+  color: cyan;
+}
