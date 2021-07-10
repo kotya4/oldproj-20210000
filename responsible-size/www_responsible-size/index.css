@@ -5,9 +5,10 @@ body {
   padding: 0;
   margin: 0;
   overflow: hidden;
-  display: flex;
+  /*display: flex;
   justify-content: center;
-  align-items: center;
+  align-items: center;*/
+  font-size: 11px;
 }
 
 .client {
@@ -40,4 +41,9 @@ body {
   position: absolute;
   pointer-events: none;
   color: cyan;
+}
+
+canvas {
+  position: absolute;
+
 }

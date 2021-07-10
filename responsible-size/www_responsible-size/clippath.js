@@ -72,8 +72,8 @@ function update_element_image_and_generate_clipPath(elem, img_src) {
     // HACK: if polynum === last_merged_i, then "redundants" is not
     //       nessesary. but i think it is so not in all cases.
 
-    console.log('polygons number before merging: ' + polygons.length);
-    console.log('polygons number after merging: ' + polynum);
+//    console.log('polygons number before merging: ' + polygons.length);
+//    console.log('polygons number after merging: ' + polynum);
 
     draw_merged_polygons();
 
@@ -85,11 +85,11 @@ function update_element_image_and_generate_clipPath(elem, img_src) {
       // Ok
       const polygons_str = polygons[0].map(to_path_space).map(p => `${p[0]}% ${p[1]}%`).join(', ');
       elem.style.clipPath = `polygon(${polygons_str})`;
-      console.log(polygons_str);
+//      console.log(polygons_str);
 
     } else if (polynum > 1) {
 
-      // console.log('image was raytraced as multipoligonal');
+//      // console.log('image was raytraced as multipoligonal');
       throw Error('image was raytraced as multipoligonal');
 
     } else {
@@ -243,7 +243,7 @@ function update_element_image_and_generate_clipPath(elem, img_src) {
       const b = Math.random()*256;
       ctx.fillStyle = `rgb(${r},${g},${b})`;
       ctx.fillRect(x * dx, y * dy, dx-1, dy-1);
-      console.log(x, y);
+//      console.log(x, y);
     }
 
 
@@ -310,7 +310,7 @@ function update_element_image_and_generate_clipPath(elem, img_src) {
       ctx.strokeStyle = 'orange';
       ctx.beginPath();
       ctx.moveTo(...to_img_space(points[0]));
-      // console.log(...to_img_space(points[0]));
+//      // console.log(...to_img_space(points[0]));
       for (let q = 1; q < points.length; ++q) {
         ctx.lineTo(...to_img_space(points[q]));
       }
