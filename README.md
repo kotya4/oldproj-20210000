@@ -42,6 +42,7 @@ bridson -- blue noise.
 
 rumba -- another threejs skeleton animation demo.
 
+sprungue -- sprog dialect
 
 Also see:
 
