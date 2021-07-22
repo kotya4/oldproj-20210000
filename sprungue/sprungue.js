@@ -70,13 +70,12 @@ const sprungue = {};
 
   function drop ( vs ) {
     // TODO: can be impoved if i build an operating tree,
-    //       now only literals will be dropped.
-    for ( let i = 0; i >= 0; ) {
-      i = vs.findIndex ( e => e === ',' );
-      if ( i > 0 ) {
+    for ( let i = 1; i < vs.length; ++i ) {
+      if ( vs[ i ] === ',' ) {
         const e = vs[ i - 1 ];
         if ( e instanceof Array || legal_literals.indexOf ( e ) >= 0 ) {
           vs.splice ( i - 1, 2 );
+          i -= 1;
         }
       }
     }
@@ -99,14 +98,64 @@ const sprungue = {};
   }
 
 
-  function interpret ( vectors, stack, waterfall=[] ) {
+
+
+  function arithmetics ( v2, v1, func, identity, incomm=null ) {
+    if ( v2 instanceof Array && v1 instanceof Array ) { // vector + vector
+      // right-hand induction ( v1.length is prime )
+      if ( v2.length < v1.length ) {
+        v2 = [ ...Array( v1.length - v2.length ).fill( identity ), ...v2 ];
+      }
+      // right-hand reduction ( v1.length is prime )
+      return v1.map ( (_,i) => arithmetics ( v2[ i ], v1[ i ], func, identity, incomm ) );
+    }
+    else if ( v2 instanceof Array ) { // vector + value
+      // e(ab)c+ -> e,(a+c,b+c)
+      if ( v2.length > 0 ) {
+        return v2.map ( (_,i) => arithmetics ( v2[ i ], v1, func, identity, incomm ) );
+      }
+      // e()a+ -> e,(a)
+      else {
+        return [ func ( identity, v1 ) ];
+      }
+    }
+    else if ( v1 instanceof Array ) { // value + vector
+      if ( incomm == null ) { // pseudocommutative
+        // ea(bc)+ -> e,[[a+b]+c]
+        // ea()+ -> e,a
+        // fe: 0(abcd)+ === ab+c+d+ ; abcd3{+} === abcd+++ ; ab+c+d+ !== abcd+++
+        return v1.reduce ( (a,c) => arithmetics ( a, c, func, identity, incomm ), v2 );
+      }
+      else { // incommutative
+        // ea(bc)- -> e,(a-b,a-c)
+        // fe: 0(abcd)- === (abcd)4{.x~v~0-~}3{^} -> (-a,-b,-c,-d)
+        if ( v1.length > 0 ) {
+          return v1.map ( (_,i) => arithmetics ( v2, v1[ i ], func, identity, incomm ) );
+        }
+        // ea()- -> e,(a)
+        else {
+          return [ func ( v2, identity ) ];
+        }
+      }
+    }
+    else { // value + value
+      // eab+ -> e,a+b
+      return func ( v2, v1 );
+    }
+  }
+
+
+
+
+
+  function interpret ( vprogram, stack, waterfall=[] ) {
     // waterfall usage example:
     // ea(b(c++)++) -> e,a,(b,([a+[b+c]])++) -> e,a,(a+[b+([a+[b+c]])])
 
-    for ( let i = 0; i < vectors.length; ++i ) {
-      const p = vectors[ i ];
+    for ( let i = 0; i < vprogram.length; ++i ) {
+      const p = vprogram[ i ];
 
-      let lit; // buffer for calc. literals
+      let lit; // buffer for calc. literals inlinely
 
       // vector
       if ( p instanceof Array ) {
@@ -174,7 +223,12 @@ const sprungue = {};
       else if ( p === '.' ) {
         const identity = 0;
         const v = pop ( stack, waterfall, identity );
-        stack.push ( v );
+        // special case for waterfall
+        // if no values in current vector then push value only once
+        // i.e.: ea(.) -> e,a,(a); NOT e,a,(a,a)
+        if ( stack.length !== 0 ) {
+          stack.push ( v );
+        }
         stack.push ( v );
       }
       // glue
@@ -198,10 +252,74 @@ const sprungue = {};
         stack.push ( v1 );
         stack.push ( v2 );
       }
+      // drop
+      else if ( p === ',' ) {
+        pop ( stack, waterfall );
+      }
+      // shift
+      else if ( p === 'v' ) {
+        const identity = 0;
+        let v = pop ( stack, waterfall, identity );
+        if ( v instanceof Array ) {
+          // e(abc)v -> e,(b,c)
+          // e()v -> e,()
+          v.shift ();
+        }
+        else {
+          // eav -> e0
+          // v -> 0
+          v = identity;
+        }
+        stack.push ( v );
+      }
+      // add
+      else if ( p === '+' ) {
+        const identity = 0;
+        let v1 = pop ( stack, waterfall, identity );
+        let v2 = pop ( stack, waterfall, identity );
+        stack.push ( arithmetics ( v2, v1, (a,b) => a + b, identity ) );
+      }
+      // mul
+      else if ( p === '*' ) {
+        const identity = 1;
+        let v1 = pop ( stack, waterfall, identity );
+        let v2 = pop ( stack, waterfall, identity );
+        stack.push ( arithmetics ( v2, v1, (a,b) => a * b, identity ) );
+      }
+      // sub
+      else if ( p === '-' ) {
+        const identity = 0;
+        let v1 = pop ( stack, waterfall, identity );
+        let v2 = pop ( stack, waterfall, identity );
+        stack.push ( arithmetics ( v2, v1, (a,b) => a - b, identity, 'incommutative' ) );
+      }
+      // div
+      else if ( p === '/' ) {
+        const identity = 1;
+        let v1 = pop ( stack, waterfall, identity );
+        let v2 = pop ( stack, waterfall, identity );
+        if ( v1 !== 0 ) {
+          stack.push ( arithmetics ( v2, v1, (a,b) => a / b, identity, 'incommutative' ) );
+        } else {
+          stack.push ( arithmetics ( v2, 0, (a,b) => a * b, identity, 'incommutative' ) );
+          // WARN: division by zero
+        }
+      }
     }
 
     return stack;
   }
+
+
+
+
+
+
+
+
+
+
+
 
 
   function flat_and_normalize ( values ) {
@@ -214,36 +332,41 @@ const sprungue = {};
       }
     }
 
-    // method 1: strict normalization
-    // const min = Math.min ( ...values );
-    // const max = Math.max ( ...values );
-    // if ( 0 <= min && min <= 1 && 0 <= max && max <= 1 ) return values;
-    // const eps = 0;
-    // return values.map ( e => ( e - ( min - eps ) ) / ( max - min + eps ) );
-
-    // method 2: cutting
+    // method 1: simple cut
     // return values.map ( e => Math.max ( 0, Math.min ( 1, e ) ) );
 
-    // method 3: overflow
-    return values.map ( e => {
-      const a = Math.abs ( e );
-      return ( a > 1.0 ) ? a % 1.0 : a;
-    } );
-
+    // method 2: fancy mod/minmax
+    const first = values[ 0 ];
+    // overflow if values are same
+    if ( values.every ( e => e === first ) ) {
+      const a = Math.abs ( first );
+      if ( a === 0 ) return [ 0, 0, 0 ]; // treat zero as zeros
+      const mod = a % 1.0;
+      if ( mod === 0 ) return [ 1, 1, 1 ]; // treat mod 1 === 0 as 1s
+      return mod; // treat as mod overwise
+    }
+    // overwise normalize values berween 0 and 1
+    const min = Math.min ( ...values );
+    const max = Math.max ( ...values );
+    // no need for normalization
+    if ( 0 <= min && min <= 1 && 0 <= max && max <= 1 ) return values;
+    // normalize
+    const edge = 0; // tldr; can be 0 or 1, on big thresholds does no effect
+    return values.map ( e => ( e - ( min - edge ) ) / ( max - min + 1 ) );
   }
 
 
   // Converts stack into valid array :
-  // rules: [stack] -> [values]
-  // e,a,b,c -> a,b,c                   -- only last 3 values are needed
-  // a,b -> a,a,b                       -- if values not enough then fill w/ FIRST value
+  // rules written as [stack] -> [values]
+  // e,a,b,c -> c,b,a                   -- only last 3 values are needed
+  // a,b -> b,a,a                       -- if values not enough then fill w/ FIRST value
   // -> 0, 0, 0                         -- empty stack returns zeros
   // (),(),(),(),() -> 0, 0, 0          -- all empty vectors ignored
   // e,(a,b,c,d) -> a,b,c               -- prefer vector if last value is non-empty vector
   // e,(a,b) -> a,b,b                   -- last-valued non-empty vector filled w/ LAST value
-  // a,(),b,() -> a,a,b                 -- empty vectors always ignored
-  // e,a,(b,c),c -> a,(b+c)/2,c         -- if vector is not last-valued then calc. arithm. meaning
-  // (a,b,(c,d)),e,f -> (a+b+c+d)/4,e,f -- nested non-last-valued vectors are flatted before calc.
+  // a,(),b,() -> b,a,a                 -- empty vectors always ignored
+  // e,a,(b,c),c -> c,(b+c)/2,a         -- if vector is not last-valued then calc. arithm. meaning
+  // (a,b,(c,d)),e,f -> f,e,(a+b+c+d)/4 -- nested non-last-valued vectors are flatted before calc.
   // All values will be normalized from 0 to 1 using preferred method.
   function validify ( values_len, stack ) {
 
@@ -297,7 +420,7 @@ const sprungue = {};
 
     }
 
-    return flat_and_normalize ( values.reverse () );
+    return flat_and_normalize ( values ); // TIP: reverse values to make them NOT reversed
   }
 
 }
