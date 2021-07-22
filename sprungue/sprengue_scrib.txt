@@ -1,0 +1,290 @@
+PHILOSOFIE: LESS SYNONYMS, NO ERRORS
+
+
+# simple dimple
+
+e,a ># b #> e,a,b
+e,a ># . #> e,a,a
+e,a,b ># , #> e,a
+e,a,b ># ~ #> e,b,a
+
+# edge of simple dimple
+
+># . #> 0        -- warn: not enough arguments
+># , #>          -- warn same
+># ~ #> 0,0      -- warn same
+a ># ~ #> a,0    -- warn same
+
+
+# value-value arithmetics
+
+e,a,b ># + #> e,a+b
+e,a,b ># - #> e,a-b
+e,a,b ># * #> e,a*b
+e,a,b ># / #> e,a/b
+
+
+# edge of value-value arithmetics
+
+a ># + #> 0+a        -- warn: not enough arguments
+a ># - #> 0-a        -- warn same
+a ># * #> 1*a        -- warn same
+a ># / #> 1/a        -- warn same
+e,a,0 ># / #> e,0    -- warn: division by zero
+
+
+tip: missing arguments replased by neutral value.
+     neutral value for * and / is 1, for others is 0.
+
+
+
+# vector composition
+
+e,a ># () #> e,a,()
+e,a,b ># ^ #> e,(a,b)
+e,a,b,c ># ()^^^ #> e,(a,b,c)
+e,(),a,b,c ># ^^^ #> e,((),a,b,c)
+e,(),() ># ^ #> e,(())
+
+tip: ^ puts value to the front of vector if first argument
+     is vector. otherwise joins values as provided.
+
+e,a ># (bc) #> e,a,(b,c)
+e,a ># (bc+) #> e,a,(b+c)
+e,a ># (b+) #> e,a,(a+b)
+                    ^
+                     \ duplication from parent vector ( waterfall )
+e,a,b ># (+) #> e,a,b,(a+b)
+e,a ># (.) #> e,a,(a)
+e,a ># (0+) #> e,a,(a)
+
+
+# edge of vector composition
+
+a ># ^ #> (0,a)  -- warn: not enough arguments
+># ^ #> (0)      -- warn same
+
+
+
+# vector decomposition (edited 22.07.2021)
+
+e,(a,b,c) ># x #> e,a
+e,(a,b,c) ># y #> e,b
+e,(a,b,c) ># z #> e,c
+e,(a,b,c) ># v #> e,(b,c)
+e,(a,b,c) ># vv #> e,(c)
+e,(a,b,c) ># vvv #> e,()
+e,() ># v #> e,()
+e,a ># v #> e,0
+e,(a,b,c) ># ! #> e,a,b,c
+
+
+
+# edge of vector decomposition (edited 22.07.2021)
+
+e,(a) ># y ># e,0   -- warn: index mismatch
+e,a ># y #> e,0     -- warn same
+e,a ># x #> e,a     -- warn: redundant decomposition
+># v #> 0           -- warn: not enough arguments
+
+
+
+# branching
+
+e,a ># [b] #> e,b
+e,a ># [bc] #> e,b,c
+e,a,b ># [+*c] #> e,a+b,a*b,c    -- warn: inconsistent arguments length
+e,a,b ># [c+.] #> e,c,a+b,b      -- warn same
+e,a,b ># [c.,d] #> e,a,c,b,d
+            ^
+             \ warn: redundant operation
+e,a,b ># [+(c+)] #> e,a+b,(b+c)
+e,a,b ># [+()] #> e,a+b,()
+e,a,b ># [(c)] #> e,a,(c)
+e,a,b ># [+(c(d))] #> e,a+b,(c,(d))
+e,a,b ># [+[+]] #> e,a+b,a+b     -- warn: redundant debranching
+e,a,b ># [[c+][+(d+f)]*] #> e,b+c,a+b,(a+b+d,f),a*b
+e,a,b ># [[c+[+d]][[+f]12[+]3]] #> e,b+c+b,d,a+b,f,1+2,3
+                   ^
+                    \ warn: redundant rebranching
+e,(a,c,a,b) ># [xzy] #> e,a,a,c
+e,(a,c,a,b) ># [(xzy)] #> e,(a,a,c)
+e,(a,c,a,b) ># ([xzy]) #> e,(a,c,a,b),(a,a,c)
+               ^
+                \ composition = duplication
+a ># [x(xx)x] ># a,(a,a),a
+
+
+
+
+
+# pseudocommutative vector-value and value-vector arithmetics
+
+e,(a,b),c ># + #> e,(a+c,b+c)
+e,c,(a,b) ># + #> e,c+a+b
+e,(a,b),c ># * #> e,(a*c,b*c)
+e,c,(a,b) ># * #> e,c*a*b
+
+e()a+ -> e,(a) === e()a~^
+
+tip: every commutative operation between various types
+     is a synonymic, so removing that by adding new
+     "pseudocommutative" meaning for that operations is
+     something good for our philosofie
+
+
+
+# incommutative vector-value and value-vector arithmetics
+
+e,(a,b),c ># - #> e,(a-c,b-c)
+e,c,(a,b) ># - #> e,(c-a,c-b)
+e,(a,b),c ># / #> e,(a/c,b/c)
+e,c,(a,b) ># / #> e,(c/a,c/b)
+
+
+
+# vector-vector arithmetics
+
+e,(a,b),(c,d) ># + #> e,(a+c,b+d)
+e,(a,b),(c,d,f) ># + #> e,(a+c,b+d,0+f) -- right-hand induction
+e,(a,b,f),(c,d) ># + #> e,(a+c,b+d) -- right-hand reduction
+e,(),(a,b,c) ># + #> e,(0+a,0+b,0+c)
+e,(a,b,c),() ># + #> e,()
+
+same for -
+same for * except neutral literal is 1 instead of 0
+same for / except neutral literal is 1 instead of 0
+
+
+
+
+# pseudocommutative *duction preverting
+
+to prevent *duction use swap operator, ie: e(ab)(cdf)+ === e(abf)(cd)~+
+
+tip: reduction can be used for cutting vectors,
+     ie cut to 4 elem. ( from start ): e(abcdef123)(0000)+ -> e(abcd)
+
+
+
+# incommutative *duction preverting
+
+non-commutative operations cannot be switched between reductiveness and
+inductiveness by using swap operator:
+
+e(ab)(cdf)-                  -> e,(a-c,b-d,0-f)
+e(abf)(cd)~- === e(cd)(abf)- -> e,(c-a,d-b,0-f)
+
+but reduction preventing can be implied by swap and glue operator:
+
+e(abc)(de)-    -> e,(a-d,b-e)     -- right-hand reduction
+e(abc)(de)0~^- -> e,(a-d,b-e,c-0) -- no reduction
+
+and induction preventing by reverse and shift:
+
+e(ab)(cde)-    -> e,(a-c,b-d,0-e) -- right-hand induction
+e(ab)(cde)rvr- -> e,(a-c,b-d)     -- no induction
+
+and right-handed *duction must be preferred among left-handed *duction,
+because left-handed *duction on incommutative vector arithmetics force us
+to use extra swap operation to prevent it.
+
+
+
+
+
+
+# not reviewed ( edited 22.07.2021 )
+
+
+
+
+e,(1,2,3) ># n #> e,(1/3,2/3,3/3) -- normalize (edge=0)
+(-1,2,-3,4) ># n #> (3/8,6/8,1/8,8/8)
+
+e,(a,b,c) ># r #> e,(c,b,a) -- reverse
+
+
+
+
+
+further hand of *duction can be mismatched
+
+1
+1,1
+1,2,1
+1,3,3,1
+1,4,6,4,1
+
+
+(1)(01)+ #> (1,1)
+(11)(011)+ #> (1,2,1)
+(121)(0121)+ #> (1,3,3,1)
+
+
+(121).0^+ #> (1,3,3,1)
+
+
+# cicle
+
+e3{} #> e
+e3{.} #> e,e,e,e
+13{2*} #> 8
+13{.2*} #> 1,2,4,8
+abcd3{,} #> a
+0(123){1+} #> (1),(2),(3)
+0(123){.1+} #> (0,1),(0,1,2),(0,1,2,3)
+(1)3{.0^+} #> (1,3,3,1)
+(1)3{..0^+} #> (1),(1,1),(1,2,1),(1,3,3,1)
+e0{whatever} -> e
+
+cicle can be used for cutting vectors,
+ie cut to 4 elem. ( remove 5 el. from end ): e(abcdef123)(!5{,})~, -> e(abcd)
+or: e(abcdef123)r4{v}r -> e(abcd)
+
+
+
+need we cicles within cicles ???
+if not, change {} to ""
+
+
+
+(x,y,t) >#
+
+
+
+.yff**          ( pascal tri. height ),
+
+(1)~{.0^+}      ( generate row ),
+
+~xff**          ( pascal tri. width ),
+
+{v}xff*/        ( normalize by 255 ),
+
+..^^            ( as color value (from black to white) ),
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
