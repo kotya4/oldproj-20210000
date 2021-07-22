@@ -91,16 +91,16 @@ const sprungue = {};
   }
 
 
-  function pop ( stack, fstack, identity=0 ) {
+  function pop ( stack, waterfall, identity=0 ) {
     let v;
     if ( ( v = stack.pop () ) != null ) return copy ( v );
-    if ( ( v = fstack.pop () ) != null ) return copy ( v );
+    if ( ( v = waterfall.pop () ) != null ) return copy ( v );
     return copy ( identity );
   }
 
 
-  function interpret ( vectors, stack, flatstack=[] ) {
-    // flatstack usage example:
+  function interpret ( vectors, stack, waterfall=[] ) {
+    // waterfall usage example:
     // ea(b(c++)++) -> e,a,(b,([a+[b+c]])++) -> e,a,(a+[b+([a+[b+c]])])
 
     for ( let i = 0; i < vectors.length; ++i ) {
@@ -110,7 +110,8 @@ const sprungue = {};
 
       // vector
       if ( p instanceof Array ) {
-        stack.push ( interpret ( p, [], [ ...flatstack, ...stack ] ) );
+        const wf = [ ...waterfall, ...stack ];
+        stack.push ( interpret ( p, [], wf ) );
       }
       // literal
       else if ( ( lit = literal ( p ) ) != null ) {
@@ -119,7 +120,7 @@ const sprungue = {};
       // first element of vector
       else if ( p === 'x' ) {
         const identity = 0;
-        const v = pop ( stack, flatstack, identity );
+        const v = pop ( stack, waterfall, identity );
         if ( v instanceof Array ) { // vector
           if ( v.length >= 1 ) {
             stack.push ( v[ 0 ] );
@@ -136,7 +137,7 @@ const sprungue = {};
       // second element of vector
       else if ( p === 'y' ) {
         const identity = 0;
-        const v = pop ( stack, flatstack, identity );
+        const v = pop ( stack, waterfall, identity );
         if ( v instanceof Array ) { // vector
           if ( v.length >= 2 ) {
             stack.push ( v[ 1 ] );
@@ -154,7 +155,7 @@ const sprungue = {};
       // third element of vector
       else if ( p === 'z' ) {
         const identity = 0;
-        const v = pop ( stack, flatstack, identity );
+        const v = pop ( stack, waterfall, identity );
         if ( v instanceof Array ) { // vector
           if ( v.length >= 3 ) {
             stack.push ( v[ 2 ] );
@@ -172,15 +173,15 @@ const sprungue = {};
       // copy
       else if ( p === '.' ) {
         const identity = 0;
-        const v = pop ( stack, flatstack, identity );
+        const v = pop ( stack, waterfall, identity );
         stack.push ( v );
         stack.push ( v );
       }
       // glue
       else if ( p === '^' ) {
         const identity = 0;
-        const v1 = pop ( stack, flatstack, identity );
-        const v2 = pop ( stack, flatstack, identity );
+        const v1 = pop ( stack, waterfall, identity );
+        const v2 = pop ( stack, waterfall, identity );
         if ( v1 instanceof Array ) { // ea(bc)^ -> e(abc)
           v1.unshift ( v2 );
           stack.push ( v1 );
@@ -192,8 +193,8 @@ const sprungue = {};
       // swap
       else if ( p === '~' ) {
         const identity = 0;
-        const v1 = pop ( stack, flatstack, identity );
-        const v2 = pop ( stack, flatstack, identity );
+        const v1 = pop ( stack, waterfall, identity );
+        const v2 = pop ( stack, waterfall, identity );
         stack.push ( v1 );
         stack.push ( v2 );
       }
