@@ -91,7 +91,17 @@ const sprungue = {};
   }
 
 
-  function interpret ( vectors, stack ) {
+  function pop ( stack, fstack, identity=0 ) {
+    let v;
+    if ( ( v = stack.pop () ) != null ) return copy ( v );
+    if ( ( v = fstack.pop () ) != null ) return copy ( v );
+    return copy ( identity );
+  }
+
+
+  function interpret ( vectors, stack, flatstack=[] ) {
+    // flatstack usage example:
+    // ea(b(c++)++) -> e,a,(b,([a+[b+c]])++) -> e,a,(a+[b+([a+[b+c]])])
 
     for ( let i = 0; i < vectors.length; ++i ) {
       const p = vectors[ i ];
@@ -100,9 +110,7 @@ const sprungue = {};
 
       // vector
       if ( p instanceof Array ) {
-
-        // stack = interpret ( p, stack, vs,  );
-
+        stack.push ( interpret ( p, [], [ ...flatstack, ...stack ] ) );
       }
       // literal
       else if ( ( lit = literal ( p ) ) != null ) {
@@ -110,16 +118,14 @@ const sprungue = {};
       }
       // first element of vector
       else if ( p === 'x' ) {
-        const v = stack.pop ();
-
-        // TODO: check for emptyness
-
+        const identity = 0;
+        const v = pop ( stack, flatstack, identity );
         if ( v instanceof Array ) { // vector
-          if ( v.length > 0 ) {
+          if ( v.length >= 1 ) {
             stack.push ( v[ 0 ] );
           }
           else { // vector is empty
-            stack.push ( 0 );
+            stack.push ( identity );
             // WARN: empty vector
           }
         }
@@ -129,58 +135,52 @@ const sprungue = {};
       }
       // second element of vector
       else if ( p === 'y' ) {
-        const v = stack.pop ();
-
-        // TODO: check for emptyness
-
+        const identity = 0;
+        const v = pop ( stack, flatstack, identity );
         if ( v instanceof Array ) { // vector
-          if ( v.length > 0 ) {
+          if ( v.length >= 2 ) {
             stack.push ( v[ 1 ] );
           }
           else { // vector is empty
-            stack.push ( 0 );
+            stack.push ( identity );
             // WARN: empty vector
           }
         }
         else { // value
-          stack.push ( 0 );
+          stack.push ( identity );
           // WARN: cannot get y from value
         }
       }
       // third element of vector
       else if ( p === 'z' ) {
-        const v = stack.pop ();
-
-        // TODO: check for emptyness
-
+        const identity = 0;
+        const v = pop ( stack, flatstack, identity );
         if ( v instanceof Array ) { // vector
-          if ( v.length > 0 ) {
+          if ( v.length >= 3 ) {
             stack.push ( v[ 2 ] );
           }
           else { // vector is empty
-            stack.push ( 0 );
+            stack.push ( identity );
             // WARN: empty vector
           }
         }
         else { // value
-          stack.push ( 0 );
+          stack.push ( identity );
           // WARN: cannot get z from value
         }
       }
       // copy
       else if ( p === '.' ) {
-
-        // TODO: check for emptyness
-
-        stack.push ( copy ( stack[ stack.length - 1 ] ) );
+        const identity = 0;
+        const v = pop ( stack, flatstack, identity );
+        stack.push ( v );
+        stack.push ( v );
       }
       // glue
       else if ( p === '^' ) {
-        const v1 = stack.pop ();
-        const v2 = stack.pop ();
-
-        // TODO: check for emptyness
-
+        const identity = 0;
+        const v1 = pop ( stack, flatstack, identity );
+        const v2 = pop ( stack, flatstack, identity );
         if ( v1 instanceof Array ) { // ea(bc)^ -> e(abc)
           v1.unshift ( v2 );
           stack.push ( v1 );
@@ -191,18 +191,13 @@ const sprungue = {};
       }
       // swap
       else if ( p === '~' ) {
-        const v1 = stack.pop ();
-        const v2 = stack.pop ();
-
-        // TODO: check for emptyness
-
+        const identity = 0;
+        const v1 = pop ( stack, flatstack, identity );
+        const v2 = pop ( stack, flatstack, identity );
         stack.push ( v1 );
         stack.push ( v2 );
       }
     }
-
-    // console.log(stack);
-    // return null;
 
     return stack;
   }
@@ -229,7 +224,10 @@ const sprungue = {};
     // return values.map ( e => Math.max ( 0, Math.min ( 1, e ) ) );
 
     // method 3: overflow
-    return values.map ( e => Math.abs ( e % 1.0 ) );
+    return values.map ( e => {
+      const a = Math.abs ( e );
+      return ( a > 1.0 ) ? a % 1.0 : a;
+    } );
 
   }
 

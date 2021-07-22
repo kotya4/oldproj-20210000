@@ -43,11 +43,9 @@ function main () {
     ( initial stack = (x,y,time) ),
 
 
-    .x~y0^^
+    (.x~y0^^),
 
-    (0012/),
-
-    (001),
+    (1~1)
 
   `;
 
@@ -57,9 +55,9 @@ function main () {
 
   // console.log ( S.clear ( program ) );
   // console.log ( S.split ( S.clear ( program ) ) );
-
-  console.log ( vectors );
   // console.log ( S.validify ( 3, [ 0, 0.1, 1.5 ] ) );
+
+  console.log ( 'program:', JSON.stringify ( vectors ) );
 
 
 
@@ -73,11 +71,15 @@ function main () {
     const x = ( i / 4 % ctx.canvas.width | 0 ) / ctx.canvas.width;
     const y = ( i / 4 / ctx.canvas.width | 0 ) / ctx.canvas.height;
 
-
-    const sstack = S.interpret ( vectors, [ [ x, y, 0 ] ] );
-    if ( sstack == null ) break;
-    let rgb = S.validify ( 3, sstack );
-    // rgb = [ x, y, 0 ];
+    let rgb;
+    if ( 1 ) {
+      const sstack = S.interpret ( vectors, [ [ x, y, 0 ] ] );
+      if ( sstack == null ) break;
+      rgb = S.validify ( 3, sstack );
+    }
+    else {
+      rgb = [ x, y, 0 ];
+    }
 
     data[ i + 0 ] = rgb[ 0 ] * 256 | 0;
     data[ i + 1 ] = rgb[ 1 ] * 256 | 0;
@@ -98,12 +100,12 @@ function main () {
     const w = rect.right - rect.left;
     const h = rect.bottom - rect.top;
 
-    const sstack = S.interpret ( vectors, [ [ x / w, y / h, 0 ] ] );
+    let sstack = [ [ x / w, y / h, 0 ] ];
+    console.log ( 'stack before:', copy ( sstack ) );
+    sstack = S.interpret ( vectors, sstack );
+    console.log ( 'stack after:', copy ( sstack ) );
     const rgb = S.validify ( 3, sstack );
-    console.log ( sstack );
-    console.log ( rgb );
-
-
+    console.log ( 'values:', copy ( rgb ) );
   } );
 
 }
