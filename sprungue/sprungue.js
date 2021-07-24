@@ -2,16 +2,31 @@ const sprungue = {};
 
 {
 
+  sprungue.stackify = stackify;
   sprungue.clear = clear;
   sprungue.split = split;
   sprungue.drop = drop;
   sprungue.interpret = interpret;
   sprungue.validify = validify;
+  sprungue.debug = false;
 
 
-  function print ( ...args ) {
-    console.log ( args.join ( ' ' ) );
+
+  class Vector extends Array {
+    constructor ( ...args ) {
+      super ( args.length );
+      args.forEach ( (e,i) => this[ i ] = e );
+    }
   }
+
+
+  class Loop extends Array {
+    constructor ( ...args ) {
+      super ( args.length );
+      args.forEach ( (e,i) => this[ i ] = e );
+    }
+  }
+
 
 
   function copy ( a ) {
@@ -22,9 +37,23 @@ const sprungue = {};
     }
   }
 
+  function stackify ( a ) {
+    if ( a instanceof Array ) {
+      const v = new Vector ();
+      for ( let i = 0; i < a.length; ++i ) {
+        v.push ( stackify ( a[ i ] ) );
+      }
+      return v;
+    }
+    else {
+      return a;
+    }
+  }
+
+
 
   const legal_literals = '0123456789abcdef';
-  const legal_operators = '.,()xyz+-*/^!~';
+  const legal_operators = '.,()xyz+-*/^v!~{}';
 
   function clear ( program ) {
     const legal = legal_operators + legal_literals;
@@ -32,48 +61,80 @@ const sprungue = {};
   }
 
 
-  function split ( program ) {
-    let vs = [];
+
+
+  // split func. consistently calls helper split_* funcs. to
+  // gradually parse vectors, loops, literals and operators
+  // and make the nested tree out of them.
+  // TIP: call split_* for vector to parse main program space as vector.
+  function split ( vprogram ) {
+    const vector = { construct: Vector, start: '(', end: ')' };
+    const loop = { construct: Loop, start: '{', end: '}' };
+
+    let vs = vprogram;
+    vs = split_nested ( vs, loop );
+    vs = split_nested ( vs, vector );
+    return vs;
+  }
+
+
+
+
+
+
+  function split_nested ( vprogram, rule ) {
+    let vs = new rule.construct ();
     let depth = 0;
     let istart = -1;
-    for ( let i = 0; i < program.length; ++i ) {
-      // vector starts
-      if ( program[ i ] === '(' ) {
+    for ( let i = 0; i < vprogram.length; ++i ) {
+      // nested sth starts
+      if ( vprogram[ i ] === rule.start ) {
         if ( depth === 0 ) istart = i;
         depth++;
       }
-      // vector ends
-      else if ( program[ i ] === ')' ) {
+      // nested sth ends
+      else if ( vprogram[ i ] === rule.end ) {
         depth--;
         if ( depth === 0 ) {
-          vs.push ( split ( program.slice ( istart + 1, i ) ) );
+          vs.push ( split_nested ( vprogram.slice ( istart + 1, i ), rule ) );
           istart = i;
         }
-        // unexpected vector end
+        // unexpected nested sth end
         else if ( depth < 0 ) {
           depth = 0;
-          vs = [ vs ];
+          vs = new rule.instance ( vs );
         }
       }
       // other commands
       else if ( depth === 0 ) {
-        vs.push ( program[ i ] );
+        vs.push ( vprogram[ i ] );
       }
     }
-    // vector has no end
+    // nested sth has no end
     if ( depth > 0 ) {
-      vs.push ( split ( program.slice ( istart + 1 ) ) );
+      vs.push ( split_nested ( vprogram.slice ( istart + 1 ), rule ) );
     }
     return vs;
   }
 
 
+
+
+
+
+
+
   function drop ( vs ) {
-    // TODO: can be impoved if i build an operating tree,
+    // TODO: also need to igonre
+    //       0{whatever}
+    //       (){whatever}
+    //       (0000){whatever}
+    //       {whatever}
     for ( let i = 1; i < vs.length; ++i ) {
       if ( vs[ i ] === ',' ) {
         const e = vs[ i - 1 ];
-        if ( e instanceof Array || legal_literals.indexOf ( e ) >= 0 ) {
+        // e(whatever),a -> ea
+        if ( e instanceof Vector || legal_literals.indexOf ( e ) >= 0 ) {
           vs.splice ( i - 1, 2 );
           i -= 1;
         }
@@ -101,25 +162,26 @@ const sprungue = {};
 
 
   function arithmetics ( v2, v1, func, identity, incomm=null ) {
-    if ( v2 instanceof Array && v1 instanceof Array ) { // vector + vector
+    // TIP: there cannot be nothing but vector and number
+    if ( v2 instanceof Vector && v1 instanceof Vector ) { // vector + vector
       // right-hand induction ( v1.length is prime )
       if ( v2.length < v1.length ) {
-        v2 = [ ...Array( v1.length - v2.length ).fill( identity ), ...v2 ];
+        v2 = new Vector ( ...new Vector( v1.length - v2.length ).fill ( identity ), ...v2 );
       }
       // right-hand reduction ( v1.length is prime )
       return v1.map ( (_,i) => arithmetics ( v2[ i ], v1[ i ], func, identity, incomm ) );
     }
-    else if ( v2 instanceof Array ) { // vector + value
+    else if ( v2 instanceof Vector ) { // vector + number
       // e(ab)c+ -> e,(a+c,b+c)
       if ( v2.length > 0 ) {
         return v2.map ( (_,i) => arithmetics ( v2[ i ], v1, func, identity, incomm ) );
       }
       // e()a+ -> e,(a)
       else {
-        return [ func ( identity, v1 ) ];
+        return new Vector ( func ( identity, v1 ) );
       }
     }
-    else if ( v1 instanceof Array ) { // value + vector
+    else if ( v1 instanceof Vector ) { // number + vector
       if ( incomm == null ) { // pseudocommutative
         // ea(bc)+ -> e,[[a+b]+c]
         // ea()+ -> e,a
@@ -134,11 +196,11 @@ const sprungue = {};
         }
         // ea()- -> e,(a)
         else {
-          return [ func ( v2, identity ) ];
+          return new Vector ( func ( v2, identity ) );
         }
       }
     }
-    else { // value + value
+    else { // number + number
       // eab+ -> e,a+b
       return func ( v2, v1 );
     }
@@ -146,9 +208,9 @@ const sprungue = {};
 
 
 
-
-
-  function interpret ( vprogram, stack, waterfall=[] ) {
+  // vprogram is Vector of Vector, Loop, Character
+  // stack, waterfall are Array of Vector, Number
+  function interpret ( vprogram, stack, waterfall=new Vector (), ret_waterfall=null ) {
     // waterfall usage example:
     // ea(b(c++)++) -> e,a,(b,([a+[b+c]])++) -> e,a,(a+[b+([a+[b+c]])])
 
@@ -158,9 +220,73 @@ const sprungue = {};
       let lit; // buffer for calc. literals inlinely
 
       // vector
-      if ( p instanceof Array ) {
-        const wf = [ ...waterfall, ...stack ];
-        stack.push ( interpret ( p, [], wf ) );
+      if ( p instanceof Vector ) {
+        const wf = new Vector ( ...copy ( waterfall ), ...copy ( stack ) );
+        stack.push ( interpret ( p, new Vector (), wf ) );
+      }
+      // loop
+      else if ( p instanceof Loop ) {
+        const identity = 0;
+        let v = pop ( stack, waterfall, identity );
+
+        if ( v instanceof Vector ) {
+
+        }
+        else {
+
+          if ( v > 0 ) {
+
+            for ( let i = 0; i < v; ++i ) {
+
+              // TODO:
+
+            }
+
+          }
+          else if ( v < 0 ) {
+
+            // TODO: negative can be function
+
+          }
+
+        }
+
+
+
+        /*
+        // convert e3{} to e(3){}
+        if ( ! ( v instanceof Vector ) ) {
+          v = new Vector ( v );
+        }
+
+
+        // e(ab){.} runs loop {.} a times and b times consistently
+        for ( let i = 0; i < v.length; ++i ) {
+          const count = v[ i ];
+          // default loop
+          if ( count >= 0 ) {
+            let wf = copy ( waterfall );
+            for ( let k = 0; k < count; ++k ) {
+              if ( sprungue.debug ) {
+                console.log ( 'wf before:', wf );
+                console.log ( 'wf before:', wf );
+              }
+              [ stack, wf ] = interpret ( p, stack, wf, 'ret_waterfall' );
+              if ( sprungue.debug ) {
+                console.log ( 'wf after:', wf );
+                console.log ( 'wf after:', wf );
+              }
+            }
+          }
+          // negative count means nothing for now
+          else {
+
+          }
+        }
+        */
+
+
+
       }
       // literal
       else if ( ( lit = literal ( p ) ) != null ) {
@@ -170,7 +296,7 @@ const sprungue = {};
       else if ( p === 'x' ) {
         const identity = 0;
         const v = pop ( stack, waterfall, identity );
-        if ( v instanceof Array ) { // vector
+        if ( v instanceof Vector ) { // vector
           if ( v.length >= 1 ) {
             stack.push ( v[ 0 ] );
           }
@@ -187,7 +313,7 @@ const sprungue = {};
       else if ( p === 'y' ) {
         const identity = 0;
         const v = pop ( stack, waterfall, identity );
-        if ( v instanceof Array ) { // vector
+        if ( v instanceof Vector ) { // vector
           if ( v.length >= 2 ) {
             stack.push ( v[ 1 ] );
           }
@@ -205,7 +331,7 @@ const sprungue = {};
       else if ( p === 'z' ) {
         const identity = 0;
         const v = pop ( stack, waterfall, identity );
-        if ( v instanceof Array ) { // vector
+        if ( v instanceof Vector ) { // vector
           if ( v.length >= 3 ) {
             stack.push ( v[ 2 ] );
           }
@@ -236,12 +362,26 @@ const sprungue = {};
         const identity = 0;
         const v1 = pop ( stack, waterfall, identity );
         const v2 = pop ( stack, waterfall, identity );
-        if ( v1 instanceof Array ) { // ea(bc)^ -> e(abc)
+        if ( v1 instanceof Vector ) { // ea(bc)^ -> e(abc)
           v1.unshift ( v2 );
           stack.push ( v1 );
         }
         else { // eab^ -> e(ab)
           stack.push ( [ v2, v1 ] );
+        }
+      }
+      // escape
+      else if ( p === '!' ) {
+        const identity = 0;
+        const v = pop ( stack, waterfall, identity );
+        if ( v instanceof Vector ) {
+          for ( let i = 0; i < v.length; ++i ) {
+            stack.push ( v[ i ] );
+          }
+        }
+        else {
+          stack.push ( v );
+          // warn: cannot escape value
         }
       }
       // swap
@@ -260,7 +400,7 @@ const sprungue = {};
       else if ( p === 'v' ) {
         const identity = 0;
         let v = pop ( stack, waterfall, identity );
-        if ( v instanceof Array ) {
+        if ( v instanceof Vector ) {
           // e(abc)v -> e,(b,c)
           // e()v -> e,()
           v.shift ();
@@ -307,6 +447,10 @@ const sprungue = {};
       }
     }
 
+    if ( ret_waterfall != null ) {
+      return [ stack, waterfall ];
+    }
+
     return stack;
   }
 
@@ -321,7 +465,7 @@ const sprungue = {};
 
 
 
-
+  // coverts Vector to Array
   function flat_and_normalize ( values ) {
     // arithmetic mean of flatted vectors
     for ( let i = 0; i < values.length; ++i ) {
@@ -332,6 +476,9 @@ const sprungue = {};
       }
     }
 
+    // Vector to Array
+    values = [ ...values ];
+
     // method 1: simple cut
     // return values.map ( e => Math.max ( 0, Math.min ( 1, e ) ) );
 
@@ -340,10 +487,10 @@ const sprungue = {};
     // overflow if values are same
     if ( values.every ( e => e === first ) ) {
       const a = Math.abs ( first );
-      if ( a === 0 ) return [ 0, 0, 0 ]; // treat zero as zeros
+      if ( a === 0 ) return values.map ( () => 0 ); // treat zero as zeros
       const mod = a % 1.0;
-      if ( mod === 0 ) return [ 1, 1, 1 ]; // treat mod 1 === 0 as 1s
-      return mod; // treat as mod overwise
+      if ( mod === 0 ) return values.map ( () => 1 ); // treat mod 1 === 0 as 1s
+      return values.map ( () => mod ); // treat as mod overwise
     }
     // overwise normalize values berween 0 and 1
     const min = Math.min ( ...values );
@@ -378,7 +525,7 @@ const sprungue = {};
     let v = stack[ stack.length - 1 ];
 
     // if last value in stack is vector
-    if ( v instanceof Array ) {
+    if ( v instanceof Vector ) {
       // and vector is not empty
       if ( v.length > 0 ) {
         // use values of vector as data,
@@ -404,7 +551,7 @@ const sprungue = {};
       }
 
       // v is vector
-      else if ( v instanceof Array ) {
+      else if ( v instanceof Vector ) {
         // if vector is empty then go to next value
         if ( v.length === 0 ) {
           vi--;

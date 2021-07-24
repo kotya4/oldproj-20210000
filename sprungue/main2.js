@@ -45,7 +45,8 @@ function main () {
 
     (.x~y0^^),
 
-    12/11
+    123(3{.})
+
 
   `;
 
@@ -53,11 +54,10 @@ function main () {
   const vectors = S.drop ( S.split ( S.clear ( program ) ) );
 
 
-  // console.log ( S.clear ( program ) );
-  // console.log ( S.split ( S.clear ( program ) ) );
-  // console.log ( S.validify ( 3, [ 0, 0.1, 1.5 ] ) );
-
-  console.log ( 'program:', JSON.stringify ( vectors ) );
+  console.log ( 'clear', S.clear ( program ) );
+  console.log ( 'split', S.split ( S.clear ( program ) ) );
+  console.log ( 'program:', S.drop ( S.split ( S.clear ( program ) ) ) );
+  // console.log ( 'validify (constant stack)', S.validify ( 3, S.stackify ( [ 0, 0.1, 1.5 ] ) ) );
 
 
 
@@ -73,7 +73,8 @@ function main () {
 
     let rgb;
     if ( 1 ) {
-      const sstack = S.interpret ( vectors, [ [ x, y, 0 ] ] );
+      let sstack = S.stackify ( [ [ x, y, 0 ] ] );
+      sstack = S.interpret ( vectors, sstack );
       if ( sstack == null ) break;
       rgb = S.validify ( 3, sstack );
     }
@@ -89,7 +90,7 @@ function main () {
 
   ctx.putImageData ( idata, 0, 0 );
 
-
+  S.debug = true;
   ctx.canvas.addEventListener ( 'click', ( e ) => {
 
     const rect = ctx.canvas.getBoundingClientRect();
@@ -100,7 +101,7 @@ function main () {
     const w = rect.right - rect.left;
     const h = rect.bottom - rect.top;
 
-    let sstack = [ [ x / w, y / h, 0 ] ];
+    let sstack = S.stackify ( [ [ x / w, y / h, 0 ] ] );
     console.log ( 'stack before:', copy ( sstack ) );
     sstack = S.interpret ( vectors, sstack );
     console.log ( 'stack after:', copy ( sstack ) );
