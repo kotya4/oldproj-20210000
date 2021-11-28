@@ -1,20 +1,30 @@
 /* gen by new.py at 2021-03-14 08:36:47.573375 */
 window.onload = async function onload() {
   if ('seedrandom' in Math) Math.seedrandom('0');
-  const height = 400;
-  const width = 400;
+  const height = 4000;
+  const width = 4000;
   const ctx = document.createElement('canvas').getContext('2d');
   ctx.canvas.height = height;
   ctx.canvas.width = width;
   document.body.appendChild(ctx.canvas);
   ctx.imageSmoothingEnabled = false;
+    ctx.canvas.style.width=innerWidth+'px'
+    
 
   ctx.save();
   ctx.fillStyle = 'black';
   ctx.fillRect(0, 0, width, height);
+
   ctx.translate(width/2, height/2);
 
-  let oldn = 2;
+  
+ctx.lineWidth=0.5
+    {
+    const scale=20
+    ctx.scale(scale,scale)
+    }
+
+  let oldn = 2.5;
   let oldc = 20;
   let nexr = 0 + oldc / oldn;
 
@@ -67,6 +77,13 @@ window.onload = async function onload() {
   }
   ctx.stroke();
 
+    ctx.lineWidth=0.25
+    ctx.font="9px monospace"
+    ctx.strokeStyle='green'
+    ctx.strokeText('penta-cantor ring', 12, 12)
+    
+
 
   ctx.restore();
+  ctx.canvas.style.filter='grayscale()'
 }
