@@ -1,0 +1,9 @@
+
+
+echo "<html><body><script>document.body.innerText=\`" > index.html
+ls *.html >> index.html
+ls */*.html >> index.html
+ls */*/*.html >> index.html
+ls */*/*/*.html >> index.html
+echo "\`" >> index.html
+echo "</script><script src='./index.js'></script></body></html>" >> index.html

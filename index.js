@@ -1,0 +1,1 @@
+document.body.innerHTML=document.body.innerText.split( /\s+/ ).filter( e=>e ).map( href=>`<a href=${href}>${href}</a>` ).join( '<br>' )
